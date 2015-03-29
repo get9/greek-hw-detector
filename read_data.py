@@ -7,32 +7,32 @@ import cv2
 from glob import glob
 from os.path import join, isdir, basename
 
-TRAINING_LABELS = [
-    'alpha',
-    'beta',
-    'delta',
-    'gamma',
-    'epsilon',
-    'zeta',
-    'heta',
-    'theta',
-    'iota',
-    'kapa',
-    'lamda',
-    'mi',
-    'ni',
-    'xi',
-    'omikron',
-    'pii',
-    'ro',
-    'sigma',
-    'tau',
-    'ypsilon',
-    'fi',
-    'xsi',
-    'psi',
-    'omega',
-]
+TRAINING_LABELS = {
+    'alpha': 0,
+    'beta': 1,
+    'delta': 2,
+    'gamma': 3,
+    'epsilon': 4,
+    'zeta': 5,
+    'heta': 6,
+    'theta': 7,
+    'iota': 8,
+    'kapa': 9,
+    'lamda': 10,
+    'mi': 11,
+    'ni': 12,
+    'xi': 13,
+    'omikron': 14,
+    'pii': 15,
+    'ro': 16,
+    'sigma': 17,
+    'tau': 18,
+    'ypsilon': 19,
+    'fi': 20,
+    'xsi': 21,
+    'psi': 22,
+    'omega': 23,
+}
 
 # Reads images from 'directory', collects them as np array of pixel values,
 # and returns a 2D array (#samples, pixel data) and the corresponding label
@@ -41,10 +41,10 @@ def read_image_dir(directory):
         raise IOError("{} is not a directory".format(directory))
 
     # Determine training label
-    label = ''
+    label = 0
     for l in TRAINING_LABELS:
-        if l in basename(directory):
-            label = l
+        if l.upper() in basename(directory):
+            label = TRAINING_LABELS[l]
             break
 
     # Read in files. Each elem of imgarrays is a numpy.ndarray
@@ -84,7 +84,7 @@ def read_toplevel_dir(directory, formatstr=""):
 
     # Resize each image array to a (1, maxpixels) array
     for i, img in enumerate(imglist):
-        tmpimg = np.zeros((1, maxnpixels))
+        tmpimg = np.zeros((1, maxnpixels), dtype=np.float32)
         tmpimg[0, :img.shape[0]] = img
         imglist[i] = tmpimg
 

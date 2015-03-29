@@ -21,6 +21,10 @@ from matplotlib import pyplot as plt
 
 # XXX Only focus on capital, normal letters for now
 
+def divide_array(array, trainratio=0.5):
+    divpoint = int( math.floor(array.shape[0] * trainratio) )
+    return [array[:divpoint], array[divpoint:]]
+
 def main():
     if len(sys.argv) < 2:
         print("Usage:")
@@ -34,8 +38,22 @@ def main():
     #     (#letters, #samples, imgheight, imgwidth)
     raw_data, labels = read_toplevel_dir(indir)
 
-    print(raw_data.shape)
-    print(labels.shape)
+    # Set training and testing data/labels
+    train_data, test_data = divide_array(raw_data, trainratio=0.5)
+    train_labels, test_labels = divide_array(labels, trainratio=0.5)
+    print(train_labels)
+
+    # Set up kNN
+    knn = cv2.KNearest()
+    knn.train(train_data, train_labels)
+
+    # Testing
+    ret, result, neighbors, dist = knn.find_nearest(test_data, k=5)
+    matches = result == test_labels
+    correct = np.count_nonzero(matches)
+    accuracy = correct*100.0/result.size
+    print accuracy
+
 #imgs = read_image_dir(indir)
 #
 #img = cv2.imread('digits.png')
