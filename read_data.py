@@ -82,14 +82,13 @@ def read_toplevel_dir(directory, formatstr=""):
     # Find the max dimension across npixels to correctly size the output array
     maxnpixels = sorted(imglist, key=lambda x: x.shape[0])[-1].shape[0]
 
-    # Make new numpy.ndarray with padding to store all vectors of image data
-    # Dimensions: (nsamples, npixels)
-    # npixels is padded to be the highest amount in dataset
+    # Resize each image array to a (1, maxpixels) array
     for i, img in enumerate(imglist):
         tmpimg = np.zeros((1, maxnpixels))
         tmpimg[0, :img.shape[0]] = img
         imglist[i] = tmpimg
 
+    # Concatenate them together into giant list of all samples of all letters
     images = np.concatenate(imglist)
     labels = np.array(train_labels)[:, np.newaxis]
 
