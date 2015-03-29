@@ -2,10 +2,8 @@ import sys
 import numpy as np
 import cv2
 
-from glob import glob
-from os.path import isdir, join
-from matplotlib import pyplot as plt
 from read_data import read_toplevel_dir
+from matplotlib import pyplot as plt
 
 # Image classes are divided into 24/25 letters, with:
 #     - Capitals (24 letters)
@@ -19,9 +17,6 @@ from read_data import read_toplevel_dir
 #
 # XXX Only focus on capital, normal letters for now
 
-        
-
-
 def main():
     if len(sys.argv) < 2:
         print("Usage:")
@@ -30,7 +25,9 @@ def main():
 
     indir = sys.argv[1]
 
-    print(read_toplevel_dir(indir).shape)
+    # Read in data to giant numpy array
+    read_toplevel_data(indir)
+
 
 #imgs = read_image_dir(indir)
 #

@@ -1,5 +1,4 @@
 import numpy as np
-import cv2
 import sys
 
 from glob import glob
@@ -24,7 +23,6 @@ def read_image_dir(directory):
     for i, img in enumerate(imgarrays):
         imgsdata[i, :img.shape[0], :img.shape[1]] = img
 
-    print(imgsdata.shape)
     return imgsdata
 
 # Reads images from each directory inside 'toplevel' by calling read_image_dir
