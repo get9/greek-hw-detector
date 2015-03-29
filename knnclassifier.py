@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
+
 import sys
 import numpy as np
+import math
 import cv2
 
 from read_data import read_toplevel_dir
@@ -7,14 +10,15 @@ from matplotlib import pyplot as plt
 
 # Image classes are divided into 24/25 letters, with:
 #     - Capitals (24 letters)
-#           - Normal (10780 bmp files)
-#           - Suffix (10720 bmp files)
-#     - Lowercase (25)
+#           - Normal
+#           - Suffix
+#     - Lowercase (25 letters)
 #           - Normal
 #           - Suffix
 #
-# Each image is a Bitmap file of size 45x49 pixels
-#
+# Because there aren't an equal number of pixels or images in each dir in data,
+# Need to pad numpy arrays with zeros in read_data
+
 # XXX Only focus on capital, normal letters for now
 
 def main():
@@ -26,9 +30,12 @@ def main():
     indir = sys.argv[1]
 
     # Read in data to giant numpy array
-    read_toplevel_data(indir)
+    # raw_data dimensions:
+    #     (#letters, #samples, imgheight, imgwidth)
+    raw_data, labels = read_toplevel_dir(indir)
 
-
+    print(raw_data.shape)
+    print(labels.shape)
 #imgs = read_image_dir(indir)
 #
 #img = cv2.imread('digits.png')
