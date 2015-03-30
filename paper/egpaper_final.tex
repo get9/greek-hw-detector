@@ -41,6 +41,22 @@ Lexington, KY\\
 \maketitle
 %\thispagestyle{empty}
 
+\section{Progress}
+\begin{itemize}
+    \item Complete changed my project around after realizing that it was not feasible to use off-the-shelf OCR scanners to try and recognize handwritten text
+    \item At the recommendation of Dr. Seales, dropped the notion of scanning my own papyrus on the scanner in Marksbury because it would take too long to complete and "the scanner is really finicky"
+    \item Iterated through several project ideas until I was able to come up with the current idea
+    \item Did some initial research and tried to locate datasets. Found the GCDB database of handwritten characters. I would like to evaluate classifiers that have been trained with this data to detect those from ancient Greek writings from http://sites.lib.byu.edu/scholarsarchive/byu-multi-spectral-imaging-project/
+    \item Using OpenCV + Python, built a simple kNN classifier that was trained and evaluated on the GCDB data, obtaining 66.8\% accuracy in recognition
+\end{itemize}
+
+\section{Issues}
+\begin{itemize}
+    \item Still do not have manually-segmented letterforms from BYU corpora, but expect to have them in the coming weeks with the help of Scrolls research team members. This is the key part of the project
+    \item Need to create more classifiers using different ML techniques to try and get the best detector possible
+    \item Need to determine which features would be the best for testing on modern Greek handwriting and then evaluating on ancient Greek
+\end{itemize}
+
 %%%%%%%%% ABSTRACT
 \begin{abstract}
     While recognition of machine-printed text with automated procedures is considered a solved problem by most computer scientists, recognition of handwriting is still a difficult problem in the field of text recognition. On top of these difficulties, recognition of ancient manuscript letterforms is even more difficult due to document deformities and letterform occlusion. Because of the lack of datasets for ancient Greek handwriting, classifiers employing a variety of machine learning techniques were trained on the [GCBD] dataset and evaluated on both samples from that dataset and on manually-segmented letterforms from an ancient Greek manuscript corpus.
