@@ -45,7 +45,6 @@ def read_image_dir(directory):
     print(directory)
     dir_label = splitext(directory.rstrip('/'))[1].strip('.').lower()
     label = TRAINING_LABELS[dir_label]
-    print("{} --> {}".format(dir_label, label))
 
     # Read in files. Each elem of imgarrays is a numpy.ndarray
     bmpfilenames = glob(join(directory, '*.bmp'))

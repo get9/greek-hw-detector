@@ -41,18 +41,28 @@ def main():
     # Set training and testing data/labels
     train_data, test_data = divide_array(raw_data, trainratio=0.5)
     train_labels, test_labels = divide_array(labels, trainratio=0.5)
-    print(train_labels)
 
     # Set up kNN
     knn = cv2.KNearest()
     knn.train(train_data, train_labels)
 
     # Testing
-    ret, result, neighbors, dist = knn.find_nearest(test_data, k=5)
-    matches = result == test_labels
-    correct = np.count_nonzero(matches)
-    accuracy = correct*100.0/result.size
-    print accuracy
+    k = range(1, 21)
+    accuracies = []
+    for i in k:
+        ret, result, neighbors, dist = knn.find_nearest(test_data, k=i)
+        matches = result == test_labels
+        correct = np.count_nonzero(matches)
+        accuracy = correct*100.0/result.size
+        accuracies.append(accuracy)
+        print("({}, {})".format(i, accuracy))
+
+    # Plotting
+    plt.plot(k, accuracies, 'ro')
+    plt.axis('tight')
+    plt.xlabel('k')
+    plt.ylabel('Accuracy (%)')
+    plt.show()
 
 #imgs = read_image_dir(indir)
 #
