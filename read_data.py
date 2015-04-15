@@ -8,6 +8,9 @@ from glob import glob
 from os.path import join, isdir, basename, splitext
 from itertools import izip_longest, chain
 
+IMG_WIDTH  = 49
+IMG_HEIGHT = 51
+
 TRAINING_LABELS = {
     'alpha': 0,
     'beta': 1,
@@ -42,23 +45,17 @@ def read_image_dir(directory):
         raise IOError("{} is not a directory".format(directory))
 
     # Determine training label
-    print(directory)
     dir_label = splitext(directory.rstrip('/'))[1].strip('.').lower()
     label = TRAINING_LABELS[dir_label]
+    print("{} --> {}, {}".format(basename(directory), dir_label, label))
 
     # Read in files. Each elem of imgarrays is a numpy.ndarray
-    bmpfilenames = glob(join(directory, '*.bmp'))
+    bmpfilenames = glob(join(directory, '*.*'))
     imgarrays = [cv2.imread(bmp, cv2.IMREAD_GRAYSCALE) for bmp in bmpfilenames]
 
-    # Find max image width/height from arrays and set that param
-    maxheight = sorted(imgarrays, key=lambda x: x.shape[0])[-1].shape[0]
-    maxwidth = sorted(imgarrays, key=lambda x: x.shape[1])[-1].shape[1]
-
     # imgsdata is list of numpy arrays of pixel data
-    imgsdata = map(lambda i: i.flatten(), imgarrays)
-    labels = [label for _ in imgsdata]
-    data_with_labels = zip(imgsdata, labels)
-    return zip(imgsdata, labels)
+    labels = [label for _ in imgarrays]
+    return zip(imgarrays, labels)
 
 # Reads images from each directory inside 'toplevel' by calling read_image_dir
 # on each one of them and putting results into a numpy array
@@ -76,7 +73,6 @@ def read_toplevel_dir(directory, formatstr=""):
         images = read_image_dir(d)
         # imglist is [[(np.array, label), ...], ...]
         imglist.append(images)
-        total_num_samples += len(images)
 
     # Need to swizzle images together
     swizzled_imgs = list(chain.from_iterable(izip_longest(*imglist)))
@@ -84,18 +80,12 @@ def read_toplevel_dir(directory, formatstr=""):
     # Remove None elements that were introduced from swizzling
     swizzled_imgs = filter(None, swizzled_imgs)
 
-    # Find the max dimension across npixels to correctly size the output array
-    maxnpixels = sorted(swizzled_imgs, key=lambda x: x[0].shape[0])[-1][0].shape[0]
-
-    # Resize each image array to a (1, maxpixels) array
-    for i, img in enumerate(swizzled_imgs):
-        tmpimg = np.zeros((1, maxnpixels), dtype=np.float32)
-        tmpimg[0, :img[0].shape[0]] = img[0]
-        swizzled_imgs[i] = (tmpimg, img[1])
-
     # Concatenate them together into giant list of all samples of all letters
     data, labels = zip(*swizzled_imgs)
+    for d in data:
+        print(d.shape)
     images = np.concatenate(data)
+    print(images.shape)
     labels = np.array(labels)[:, np.newaxis]
 
     return [images, labels]
