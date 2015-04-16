@@ -6,6 +6,8 @@
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{subcaption}
+\usepackage{textgreek}
 
 % Include other packages here, before hyperref.
 
@@ -43,48 +45,67 @@ Lexington, KY\\
 
 \section{Progress}
 \begin{itemize}
-    \item Complete changed my project around after realizing that it was not feasible to use off-the-shelf OCR scanners to try and recognize handwritten text
-    \item At the recommendation of Dr. Seales, dropped the notion of scanning my own papyrus on the scanner in Marksbury because it would take too long to complete and "the scanner is really finicky"
-    \item Iterated through several project ideas until I was able to come up with the current idea
-    \item Did some initial research and tried to locate datasets. Found the GCDB database of handwritten characters. I would like to evaluate classifiers that have been trained with this data to detect those from ancient Greek writings from http://sites.lib.byu.edu/scholarsarchive/byu-multi-spectral-imaging-project/
-    \item Using OpenCV + Python, built a simple kNN classifier that was trained and evaluated on the GCDB data, obtaining 66.8\% accuracy in recognition
+    \item Obtained some initial samples of ancient Greek handwriting from the [BYU] team. These samples were hand-extracted by a member of Dr. Seales' research team from high-resolution images of the Herculaneum documents and segmented into separate RGB image files. I binarized these images and explored different ways of cleaning up the data, including morphological filters and different image processing routines.
+    \item With OpenCV + Python, built an initial classifier based on SVM + HOG features that performs with 49.46\% accuracy when trained on half the test data and evaluated on the other half (of modern Greek handwriting)
+    \item Updated paper text in some places to more accurately reflect the project goal and status
 \end{itemize}
 
 \section{Issues}
 \begin{itemize}
-    \item Still do not have manually-segmented letterforms from BYU corpora, but expect to have them in the coming weeks with the help of Scrolls research team members. This is the key part of the project
     \item Need to create more classifiers using different ML techniques to try and get the best detector possible
     \item Need to determine which features would be the best for testing on modern Greek handwriting and then evaluating on ancient Greek
+    \item Unsure if current classifiers are working as intended or not. The accuracy they give me is low, even for what I expect to get from handwritten data (and this is only on the modern Greek handwritten dataset)
 \end{itemize}
 
 %%%%%%%%% ABSTRACT
 \begin{abstract}
-    While recognition of machine-printed text with automated procedures is considered a solved problem by most computer scientists, recognition of handwriting is still a difficult problem in the field of text recognition. On top of these difficulties, recognition of ancient manuscript letterforms is even more difficult due to document deformities and letterform occlusion. Because of the lack of datasets for ancient Greek handwriting, classifiers employing a variety of machine learning techniques were trained on the [GCBD] dataset and evaluated on both samples from that dataset and on manually-segmented letterforms from an ancient Greek manuscript corpus.
+    While recognition of machine-printed text with automated procedures is considered a solved problem by most computer scientists, recognition of handwriting is still a difficult problem in the field of computer vision. On top of these difficulties, recognition of ancient manuscript letterforms is made even more difficult due to document deformities, letterform occlusion, and general document age and all associated difficulties it brings. Because of the lack of datasets for ancient Greek handwriting, classifiers employing a variety of machine learning techniques were trained on the [GCBD] dataset and evaluated on both samples from that dataset and on manually-segmented letterforms from an ancient Greek manuscript corpus containing ancient Greek handwriting.
 \end{abstract}
 
 %%%%%%%%% BODY TEXT
 \section{Introduction}
 
-Automated recognition of machine-printed text is generally considered by some to be a solved problem in the field of computer vision. Many commercial and open-source systems exist that are designed to take as input images or scans of machine-printed text and output corresponding text elements with a high degree of accuracy. However, this automated process is much more difficult when it comes to recognizing handwritten text for a variety of reasons: different writing styles, various font embellishments, irregular line widths, etc.
+Automated recognition of machine-printed text is generally considered by some to be a solved problem in the field of computer vision. Many commercial and open-source systems exist that are designed to take as input images or scans of machine-printed text and output corresponding text elements with a high degree of accuracy. However, this automated process is much more difficult when it comes to recognizing handwritten text for a variety of reasons: different writing styles, various font embellishments, irregular line widths, and medium irregularities, just to name a few.
 
-Recognition of ancient handwritten text, in particular, represents a unique challenge in this field; in addition to the above-mentioned problems, texts can be malformed, occluded by foreign material on the document, or simply have degraded due to age. The ability to automatically recognize such text would be a real boon for document researchers, as not only would they be able to more easily interpret ancient text, but also contribute to the digital archival of said text.
+Recognition of ancient handwritten text, in particular, represents a unique challenge in this field; in addition to the above-mentioned problems, texts can be malformed, occluded by foreign material on the document, or simply have degraded due to (someimtes great) document age. The ability to recognize such text would be a distinct advantage for document researchers, as they would be able to extract letterforms that look promising automatically for further study later on, as well as be able to more easily distinguish between actual letterforms and random noise in the document medium.
 
 %-------------------------------------------------------------------------
 \subsection{Motivation}
 
 As a part of the larger “volume cartography” project occurring at [VisCenter], a need arose for automated recognition of ancient Greek handwritten letterforms.  Because of the volume of data that could potentially contain text is large, manually parsing flattened, textured volume data for possible letterforms is infeasible. Furthermore, in addition to team member validation, professional analysis from experts in ancient Greek writings would be required in order to evaluate and validate any potential discoveries.
 
-As a first pass, however, automated recognition of potential letterforms provides a good estimate of signal-to-noise ratio and evaluation of letterform extraction procedures. To the author’s knowledge, however, no open or commercial database of segmented ancient Greek handwritten letterforms exists with which to serve as a training dataset for any potential text classifier. Instead, the author proposes to train classifiers based on datasets of modern Greek handwriting - in particular, the dataset proposed in [GCDB] - and evaluate based on hand-labeled text from the document collection of [BYU].
+As a first pass, however, automated recognition of potential letterforms provides a good estimate of signal-to-noise ratio and evaluation of letterform extraction procedures. To the author’s knowledge, however, no open or commercial database of segmented ancient Greek handwritten letterforms exists with which to serve as a training dataset for any potential text classifier. Instead, the author proposes to train classifiers based on datasets of modern Greek handwriting - in particular, the dataset proposed in [GCDB] - and evaluate based on hand-segmented text from the document collection of [BYU].
+
+The letterforms from the [BYU] collection comprise almost all letters in the ancient Greek alphabet. There are two letters used in that alphabet that are not used today, and thus are excluded from any testing. There are approximately 150 "good" letterforms - those that both survived the process of being cast to grayscale images and that still had suitable structure after binarization. The binarized letterforms are still quite rough, as can be seen in \label{fig:AGbin}
+
+\begin{figure}
+    \centering
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[width=0.4\linewidth]{res/198423984.png}
+        \caption{Extracted letterform of an ancient Greek \textAlpha}
+        \label{fig:regalpha}
+    \end{subfigure}
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[width=0.4\linewidth]{res/001.png}
+        \captionof{figure}{The letterform binarized}
+        \label{fig:binalpha}
+    \end{subfigure}
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[width=0.4\linewidth]{res/form14.png}
+        \caption{Modern handwritten Greek \textAlpha}
+        \label{fig:binalpha}
+    \end{subfigure}
+\end{figure}
 
 %------------------------------------------------------------------------
 \section{Related Work}
 
 Automated recognition of Early Christian Greek manuscripts has been carried out previously by [CIL], in which the authors employed a segmentation-free approach by detecting open and closed cavities in letterforms and using those as a basis with which to extract features of each character. The system developed by the authors obtained a recall value of 89\% for simple letterforms in their testing dataset.
-\begin{itemize}
-    \item The database of letterforms used by the authors is not available for further study to the best of my knowledge. I have contacted one of the authors and am waiting to hear back
-\end{itemize}
 
-[HisDoc] project involved not only handwriting recognition and digitization of manuscript text data, but also developing an information retrieval system around recovered data. The authors developed this system and applied it primarily to three text corpora in different languages (Latin, German, and English, respectively). Their system accurately segmented and recognized text from each corpus and, using a neural network-based approach, had word recognition rates of less than 10\%.
+[HisDoc] project involved not only handwriting recognition and digitization of manuscript text data, but also developing an information retrieval system around recovered data. The authors developed this system and applied it primarily to three text corpora in different languages (Latin, German, and English, respectively). Their system accurately segmented and recognized text from each corpus and, using a neural network-based approach, had word recognition error rates of less than 10\%.
 
 [Diem1], [Diem2] proposed a binarization-free approach to recognizing letterforms from ancient Slavonic documents using SIFT features, SVM classifiers, and finally a weighted voting algorithm based on pre-classified local descriptors. Not applying binarization filters to input documents allowed for more data from each letterform, particularly those that were heavily degraded or experienced occlusion from stains or tears in the manuscript.
 
@@ -104,7 +125,7 @@ A variety of classifiers will be built that will be validated against both the t
 %-------------------------------------------------------------------------
 \section{Approach}
 
-In order to get a variety of results from training data, a host of classifiers will be developed using a variety of common learning algorithms. A fraction of the dataset from [GCDB] will be used to train each classifier, and the remaining samples will comprise the testing/evaluation dataset. Each trained classifier will also be evaluated on individual letterforms extracted from the corpora of [BYU].
+In order to get a variety of results from training data, a host of classifiers will be developed using a variety of common learning algorithms. A fraction of the dataset from [GCDB] will be used to train each classifier, and the remaining samples will comprise the evaluation dataset. Each trained classifier will also be evaluated on individual letterforms extracted from the corpora of [BYU].
 
 %-------------------------------------------------------------------------
 \subsection{k-Nearest Neighbors}
@@ -114,19 +135,29 @@ A very simple k-Nearest Neighbors classifier was developed using Python and Open
     \item As I try more classifiers, I will put them in subsections below this one
     \item Once I get the extracted letterforms from the BYU corpora, I will go back and evaluate the trained kNN classifier on those letterforms and report the results in the appropriate section
     \item Also want to try out other features such as Zernicke moments from [Kale]
+    \item I had issues running the kNN classifier when I resized all images to be the same size - recognition rates dropped to around 20\% for some reason. I could not find in my code where the issue was
+\end{itemize}
+
+%-------------------------------------------------------------------------
+\subsection{SVM + HOG Features}
+
+Another simple classifier built aroung Histogram of Ordered Gradients (HOG) and an SVM classifier was built again using Python and OpenCV. A classifier based on the built-in SVM classifier in OpenCV, as well as HOG features calculated from Sobel image derivatives was trained on approximately half of the test dataset, and tested on the other half.
+\begin{itemize}
+    \item I still have to actually test the classifier on the real test dataset, the ancient Greek handwritten letterforms
 \end{itemize}
 
 %-------------------------------------------------------------------------
 \section{Evaluation}
 \subsection{k-Nearest Neighbors}
 
-The simple k-Nearest Neighbors classifier was evaluated on the GCDB dataset, with 50\% of the dataset comprising the training data, and the other 50\% comprising the evaluation data. The classifier was run for differing values of $k$ in the range [1, 20]. The plot of accuracy vs. values of $k$ are shown in Figure 1.
+The simple k-Nearest Neighbors classifier was evaluated on the GCDB dataset, with 50\% of the dataset comprising the training data, and the other 50\% comprising the evaluation data. The classifier was run for differing values of $k$ in the range [1, 20]. The plot of accuracy vs. values of $k$ are shown in \label{fig:kNNplot}.
 
 \begin{figure}
     \begin{center}
         \includegraphics[width=0.8\linewidth]{res/figure_1.png}
         \caption{Plot of k-Nearest Neighbors accuracy vs. increasing values of $k$}
     \end{center}
+    \label{fig:kNNplot}
 \end{figure}
 
 \begin{itemize}
@@ -134,13 +165,16 @@ The simple k-Nearest Neighbors classifier was evaluated on the GCDB dataset, wit
     \item As I add more classifiers, I will expand this section in tandem with the above \textit{Approach} section
 \end{itemize}
 
+\subsection{SVM + HOG Features}
+The SVM classifier utilizing HOG features was trained on 50\% of the GCDB dataset, and the other half served as the testing dataset. Recognition rates of up to 49.46\% were achieved. This is still quite low, even for handwritten letteforms, which means that there is still a lot of room for improvement in this classifier.
+
 %-------------------------------------------------------------------------
 \section{Discussion}
 
 \begin{itemize}
     \item Trained kNN classifier on GCDM dataset, achieved maximum accuracy of 66.8\% recognition
+    \item Trained SVM + HOG classifier on GCDM dataset, achieved maximum accuracy of 49.46\% recognition
     \item Will list more summary results for each classifier
-    \item Once I get evaluation data from BYU corpora, will compare results and determine whether this approach is viable or not
 \end{itemize}
 
 %-------------------------------------------------------------------------

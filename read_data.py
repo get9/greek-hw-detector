@@ -8,8 +8,8 @@ from glob import glob
 from os.path import join, isdir, basename, splitext
 from itertools import izip_longest, chain
 
-IMG_WIDTH  = 49
-IMG_HEIGHT = 51
+IMG_WIDTH  = 51
+IMG_HEIGHT = 49
 
 TRAINING_LABELS = {
     'alpha': 0,
@@ -47,10 +47,10 @@ def read_image_dir(directory):
     # Determine training label
     dir_label = splitext(directory.rstrip('/'))[1].strip('.').lower()
     label = TRAINING_LABELS[dir_label]
-    print("{} --> {}, {}".format(basename(directory), dir_label, label))
+    #print("{} --> {}, {}".format(basename(directory), dir_label, label))
 
     # Read in files. Each elem of imgarrays is a numpy.ndarray
-    bmpfilenames = glob(join(directory, '*.*'))
+    bmpfilenames = glob(join(directory, '*.bmp'))
     imgarrays = [cv2.imread(bmp, cv2.IMREAD_GRAYSCALE) for bmp in bmpfilenames]
 
     # imgsdata is list of numpy arrays of pixel data
@@ -82,10 +82,7 @@ def read_toplevel_dir(directory, formatstr=""):
 
     # Concatenate them together into giant list of all samples of all letters
     data, labels = zip(*swizzled_imgs)
-    for d in data:
-        print(d.shape)
     images = np.concatenate(data)
-    print(images.shape)
     labels = np.array(labels)[:, np.newaxis]
 
     return [images, labels]
