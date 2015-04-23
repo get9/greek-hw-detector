@@ -1,50 +1,45 @@
+from sklearn.decomposition import RandomizedPCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.cross_validation import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix
+from read_data import *
 import sys
-import numpy as np
-import math
-import cv2
 
-from read_data import read_toplevel_dir
-from matplotlib import pyplot as plt
 
-def divide_array(array, trainratio=0.5):
-    divpoint = int( math.floor(array.shape[0] * trainratio) )
-    return [array[:divpoint], array[divpoint:]]
+if len(sys.argv) < 4:
+    print("Usage:")
+    print("    {} test_img_dir fvec_len n")
+    sys.exit(1)
 
-def main():
-    if len(sys.argv) < 2:
-        print("Usage:")
-        print("    {} data-file-toplevel-dir".format(sys.argv[0]))
-        sys.exit(1)
+# Read in image data and split it up into training/validation set
+data, labels = read_toplevel_dir(sys.argv[1], 'bmp', ravel=True)
+data = np.concatenate(data)
+labels = np.array(labels).ravel()
 
-    indir = sys.argv[1]
+# Split into training and validation sets
+train_data, val_data, train_labels, val_labels = train_test_split(data, labels, test_size=0.5)
 
-    # Read in data to giant numpy array
-    raw_data, labels = read_toplevel_dir(indir)
+# Reduce dimensionality of image data via PCA
+pca = RandomizedPCA(n_components=int(sys.argv[2]))
+train_data = pca.fit_transform(train_data)
+val_data = pca.transform(val_data)
 
-    # Set training and testing data/labels
-    train_data, test_data = divide_array(raw_data, trainratio=0.5)
-    train_labels, test_labels = divide_array(labels, trainratio=0.5)
+# Scale to make distance metrics easier
+scaler = StandardScaler()
+train_data = scaler.fit_transform(train_data)
+val_data = scaler.transform(val_data)
 
-    # Set up kNN
-    knn = cv2.KNearest()
-    knn.train(train_data, train_labels)
+# Fit with kNN classifier
+knn = KNeighborsClassifier(n_neighbors=int(sys.argv[3]), weights='distance')
+knn.fit(train_data, train_labels)
+prediction = knn.predict(val_data)
+print("="*20)
+print(knn)
 
-    # Testing
-    k = range(4, 21)
-    accuracies = []
-    for i in k:
-        ret, result, neighbors, dist = knn.find_nearest(test_data, k=i)
-        matches = result == test_labels
-        correct = np.count_nonzero(matches)
-        accuracy = correct*100.0/result.size
-        accuracies.append(accuracy)
-        print("({}, {})".format(i, accuracy))
+print("Confusion matrix")
+print("="*20)
+print(confusion_matrix(val_labels, prediction))
 
-    # Plotting
-    plt.plot(k, accuracies, 'ro')
-    plt.axis('tight')
-    plt.xlabel('k')
-    plt.ylabel('Accuracy (%)')
-    plt.show()
-
-main()
+correct = np.count_nonzero(val_labels == prediction)
+print("Accuracy: {}".format(correct * 100.0 / val_labels.size))
