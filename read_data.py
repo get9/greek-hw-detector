@@ -40,7 +40,7 @@ TRAINING_LABELS = {
 
 # Reads images from 'directory', collects them as np array of pixel values,
 # and returns a 2D array (#samples, pixel data) and the corresponding label
-def read_image_dir(directory):
+def read_image_dir(directory, extension):
     if not isdir(directory):
         raise IOError("{} is not a directory".format(directory))
 
@@ -50,7 +50,7 @@ def read_image_dir(directory):
     #print("{} --> {}, {}".format(basename(directory), dir_label, label))
 
     # Read in files. Each elem of imgarrays is a numpy.ndarray
-    bmpfilenames = glob(join(directory, '*.bmp'))
+    bmpfilenames = glob(join(directory, '*.{}'.format(extension)))
     imgarrays = [cv2.imread(bmp, cv2.IMREAD_GRAYSCALE) for bmp in bmpfilenames]
 
     # imgsdata is list of numpy arrays of pixel data
@@ -59,18 +59,16 @@ def read_image_dir(directory):
 
 # Reads images from each directory inside 'toplevel' by calling read_image_dir
 # on each one of them and putting results into a numpy array
-def read_toplevel_dir(directory, formatstr=""):
+def read_toplevel_dir(directory, extension, formatstr="", ravel=False):
     if not isdir(directory):
         raise IOError("{} is not a directory".format(directory))
 
-    # Temporarily store images in a list until we can figure out how big to
-    # make the full numpy.array
     dirs = glob( join(directory, '{}*'.format(formatstr)) )
     imglist = []
     total_num_samples = 0
     for d in dirs:
         # images = [(np.array, label), ...]
-        images = read_image_dir(d)
+        images = read_image_dir(d, extension)
         # imglist is [[(np.array, label), ...], ...]
         imglist.append(images)
 
@@ -82,7 +80,12 @@ def read_toplevel_dir(directory, formatstr=""):
 
     # Concatenate them together into giant list of all samples of all letters
     data, labels = zip(*swizzled_imgs)
-    images = np.concatenate(data)
-    labels = np.array(labels)[:, np.newaxis]
+    labels = np.array(labels)
 
-    return [images, labels]
+    # If we need to ravel the data (flatten it all out so that images are 1-D and
+    # labels are 1-D on primary axis), do so
+    if ravel:
+        data = map(lambda i: i.ravel().reshape((1, IMG_WIDTH * IMG_HEIGHT)), data)
+        labels = map(np.ravel, labels)
+
+    return [data, labels]
