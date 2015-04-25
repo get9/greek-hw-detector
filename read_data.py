@@ -59,7 +59,7 @@ def read_image_dir(directory, extension):
 
 # Reads images from each directory inside 'toplevel' by calling read_image_dir
 # on each one of them and putting results into a numpy array
-def read_toplevel_dir(directory, extension, formatstr="", ravel=False):
+def read_toplevel_dir(directory, extension, formatstr="", ravel=False, concat=False):
     if not isdir(directory):
         raise IOError("{} is not a directory".format(directory))
 
@@ -86,6 +86,9 @@ def read_toplevel_dir(directory, extension, formatstr="", ravel=False):
     # labels are 1-D on primary axis), do so
     if ravel:
         data = map(lambda i: i.ravel().reshape((1, IMG_WIDTH * IMG_HEIGHT)), data)
-        labels = map(np.ravel, labels)
+
+    # If we have to concat, then we need to put the data arrays together
+    if concat:
+        data = np.concatenate(data)
 
     return [data, labels]

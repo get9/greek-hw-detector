@@ -1,64 +1,78 @@
+from sklearn.decomposition import RandomizedPCA, PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.cross_validation import train_test_split
+from sklearn.grid_search import GridSearchCV
+from sklearn.svm import SVC
+from sklearn.metrics import confusion_matrix, classification_report, precision_score, recall_score
+from read_data import *
 import sys
-import cv2
-import numpy as np
-import math
-from read_data import read_toplevel_dir, IMG_WIDTH, IMG_HEIGHT
 
-SZ = 50
-bin_n = 16 # Number of bins
 
-svm_params = dict(
-    kernel_type = cv2.SVM_LINEAR,
-    svm_type    = cv2.SVM_C_SVC,
-    C           = 1.67,
-    gamma       = 5.383
-)
+if len(sys.argv) < 4:
+    print("Usage:")
+    print("    {} valImageDir testImageDir featureVecLen".format(sys.argv[0]))
+    sys.exit(1)
 
-affine_flags = cv2.WARP_INVERSE_MAP|cv2.INTER_LINEAR
+# Args
+bmp_data_dir = sys.argv[1]
+test_data_dir = sys.argv[2]
+feature_vec_len = int(sys.argv[3])
 
-def deskew(img):
-    m = cv2.moments(img, binaryImage=True)
-    if abs(m['mu02']) < 1e-2:
-        return img.copy()
-    skew = m['mu11']/m['mu02']
-    M = np.float32([[1, skew, -0.5*SZ*skew], [0, 1, 0]])
-    img = cv2.warpAffine(img,M,(SZ, SZ),flags=affine_flags)
-    return img
+# Read in image bmp_data and split it up into training/validation set
+bmp_data, bmp_labels = read_toplevel_dir(bmp_data_dir, 'bmp', ravel=True, concat=True)
+test_data, test_labels = read_toplevel_dir(test_data_dir, 'png', ravel=True, concat=True)
 
-def hog(img):
-    gx = cv2.Sobel(img, cv2.CV_32F, 1, 0)
-    gy = cv2.Sobel(img, cv2.CV_32F, 0, 1)
-    mag, ang = cv2.cartToPolar(gx, gy)
-    bins = np.int32(bin_n*ang/(2*np.pi))    # quantizing binvalues in (0...16)
-    bin_cells = bins[:SZ/2,:SZ/2], bins[SZ/2:,:SZ/2], bins[:SZ/2,SZ/2:], bins[SZ/2:,SZ/2:]
-    mag_cells = mag[:SZ/2,:SZ/2], mag[SZ/2:,:SZ/2], mag[:SZ/2,SZ/2:], mag[SZ/2:,SZ/2:]
-    hists = [np.bincount(b.ravel(), m.ravel(), bin_n) for b, m in zip(bin_cells, mag_cells)]
-    hist = np.hstack(hists)     # hist is a 64 bit vector
-    return hist
+# Split into training and validation sets
+train_data, val_data, train_labels, val_labels = train_test_split(bmp_data, bmp_labels, test_size=0.5)
 
-data, labels = read_toplevel_dir(sys.argv[1])
+# Reduce dimensionality of image bmp_data via PCA
+pca = PCA(n_components=feature_vec_len)
+train_data = pca.fit_transform(train_data)
+val_data = pca.transform(val_data)
+test_data = pca.transform(test_data)
 
-# First half is trainData, remaining is testData
-imgs = np.vsplit(data, data.shape[0]/IMG_HEIGHT)
-train_imgs, test_imgs = imgs[:len(imgs)/2], imgs[len(imgs)/2:]
-train_labels, test_labels = labels[:labels.shape[0]/2], labels[labels.shape[0]/2:]
+# Scale to make distance metrics easier
+scaler = StandardScaler()
+train_data = scaler.fit_transform(train_data)
+val_data = scaler.transform(val_data)
+test_data = scaler.transform(test_data)
 
-######     Now training      ########################
-#deskewed = map(deskew, train_imgs)
-hogdata = map(hog, train_imgs)
-trainData = np.float32(hogdata).reshape(-1,bin_n*4)
+# Hyperparameters estimated with GridSearchCV
+tuned_parameters = [
+    {
+        'kernel': ['rbf'],
+        'gamma':  [1e-4, 1e-3, 1e-2, 1e-1],
+        'C':      [1, 10, 100, 1000],
+    },
+    {
+        'kernel': ['linear'],
+        'C':      [1, 10, 100, 1000],
+    },
+]
 
-svm = cv2.SVM()
-svm.train(trainData, train_labels, params=svm_params)
-svm.save('svm_data.dat')
+scores = [
+    ('precision', precision_score),
+    ('recall',    recall_score),
+]
 
-######     Now testing      ########################
-#deskewed = map(deskew, test_imgs)
-hogdata = map(hog, test_imgs)
-testData = np.float32(hogdata).reshape(-1,bin_n*4)
-result = svm.predict_all(testData)
+# Fit with SVC classifier
+svc = SVC(C=8)
+svc.fit(train_data, train_labels)
+val_prediction = svc.predict(val_data)
+print("="*20)
+print(svc)
+print(classification_report(val_prediction, val_labels))
 
-#######   Check Accuracy   ########################
-mask = result==test_labels
-correct = np.count_nonzero(mask)
-print correct*100.0/result.size
+#print("Validation Confusion matrix")
+#print("="*20)
+#print(confusion_matrix(val_labels, val_prediction))
+
+# Get validation accuracy
+val_correct = np.count_nonzero(val_labels == val_prediction)
+print("Validation Accuracy: {}".format(val_correct * 100.0 / val_labels.size))
+
+# Get testing accuracy
+test_prediction = svc.predict(test_data)
+test_correct = np.count_nonzero(test_labels == test_prediction)
+print("Test accuracy: {}".format(test_correct * 100.0 / test_labels.size))
+print(classification_report(test_prediction, test_labels))
