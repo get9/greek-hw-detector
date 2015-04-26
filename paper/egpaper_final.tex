@@ -1,3 +1,5 @@
+% -*- coding: utf-8 -*-
+
 \documentclass[10pt,twocolumn,letterpaper]{article}
 
 \usepackage{cvpr}
@@ -8,6 +10,11 @@
 \usepackage{amssymb}
 \usepackage{subcaption}
 \usepackage{textgreek}
+\usepackage[numbers]{natbib}
+
+% Allows for embedding of ancient Greek characters in document safely
+\usepackage[utf8]{inputenc}
+\usepackage[LGR,T1]{fontenc}
 
 % Include other packages here, before hyperref.
 
@@ -20,6 +27,8 @@
 
 \def\cvprPaperID{****} % *** Enter the CVPR Paper ID here
 \def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
+
+\newcommand\Koppa{\begingroup\fontencoding{LGR}\selectfont\char21\endgroup}
 
 % Pages are numbered in submission mode, and unnumbered in camera-ready
 %\ifcvprfinal\pagestyle{empty}\fi
@@ -43,40 +52,32 @@ Lexington, KY\\
 \maketitle
 %\thispagestyle{empty}
 
-\section{Progress}
-\begin{itemize}
-    \item Obtained some initial samples of ancient Greek handwriting from the [BYU] team. These samples were hand-extracted by a member of Dr. Seales' research team from high-resolution images of the Herculaneum documents and segmented into separate RGB image files. I binarized these images and explored different ways of cleaning up the data, including morphological filters and different image processing routines.
-    \item With OpenCV + Python, built an initial classifier based on SVM + HOG features that performs with 49.46\% accuracy when trained on half the test data and evaluated on the other half (of modern Greek handwriting)
-    \item Updated paper text in some places to more accurately reflect the project goal and status
-\end{itemize}
-
-\section{Issues}
-\begin{itemize}
-    \item Need to create more classifiers using different ML techniques to try and get the best detector possible
-    \item Need to determine which features would be the best for testing on modern Greek handwriting and then evaluating on ancient Greek
-    \item Unsure if current classifiers are working as intended or not. The accuracy they give me is low, even for what I expect to get from handwritten data (and this is only on the modern Greek handwritten dataset)
-\end{itemize}
-
 %%%%%%%%% ABSTRACT
 \begin{abstract}
-    While recognition of machine-printed text with automated procedures is considered a solved problem by most computer scientists, recognition of handwriting is still a difficult problem in the field of computer vision. On top of these difficulties, recognition of ancient manuscript letterforms is made even more difficult due to document deformities, letterform occlusion, and general document age and all associated difficulties it brings. Because of the lack of datasets for ancient Greek handwriting, classifiers employing a variety of machine learning techniques were trained on the [GCBD] dataset and evaluated on both samples from that dataset and on manually-segmented letterforms from an ancient Greek manuscript corpus containing ancient Greek handwriting.
+    While recognition of machine-printed text with automated procedures is generally considered a solved problem by most computer scientists, recognition of handwriting is still a difficult problem in the field of computer vision. Recognition of ancient manuscript letterforms is made difficult due to document deformities, letterform occlusion, and general document age and all associated difficulties it brings.  There is a need for a classifier of ancient Greek letterforms extracted from ancient papyri; however, there is no known contemporary dataset of handwritten ancient Greek letterforms. Therefore, classifiers employing a variety of machine learning techniques were trained and cross-validated on the dataset proposed in \cite{GCDB} and tested on manually-segmented letterforms from the work of \cite{BYU}.
 \end{abstract}
 
 %%%%%%%%% BODY TEXT
 \section{Introduction}
 
-Automated recognition of machine-printed text is generally considered by some to be a solved problem in the field of computer vision. Many commercial and open-source systems exist that are designed to take as input images or scans of machine-printed text and output corresponding text elements with a high degree of accuracy. However, this automated process is much more difficult when it comes to recognizing handwritten text for a variety of reasons: different writing styles, various font embellishments, irregular line widths, and medium irregularities, just to name a few.
+Automated recognition of machine-printed text is generally considered by some to be a solved problem in the field of computer vision. Many commercial and open-source systems exist that are designed to take as input images or scans of machine-printed text and output corresponding text elements with a high degree of accuracy. However, this automated process is much more difficult when it comes to recognizing handwritten text for a variety of reasons: different writing styles, various font embellishments, irregular line widths, and document medium irregularities, just to name a few.
 
-Recognition of ancient handwritten text, in particular, represents a unique challenge in this field; in addition to the above-mentioned problems, texts can be malformed, occluded by foreign material on the document, or simply have degraded due to (someimtes great) document age. The ability to recognize such text would be a distinct advantage for document researchers, as they would be able to extract letterforms that look promising automatically for further study later on, as well as be able to more easily distinguish between actual letterforms and random noise in the document medium.
+Recognition of ancient handwritten text, in particular, represents a unique challenge in this field; in addition to the above-mentioned problems, texts can be malformed, occluded by foreign material on the document medium, or simply have degraded due to (sometimes exceptional) document age. The ability to recognize such text would be a distinct advantage for ancient document researchers, as they would be able to automatically extract letterforms that look promising for further study, as well as be able to more easily distinguish between actual letterforms and random noise in the document medium. Furthermore, experts knowledgable about that particular document's contents would not be required for initial analysis of whether a letterform is valid.
 
 %-------------------------------------------------------------------------
 \subsection{Motivation}
 
-As a part of the larger “volume cartography” project occurring at [VisCenter], a need arose for automated recognition of ancient Greek handwritten letterforms.  Because of the volume of data that could potentially contain text is large, manually parsing flattened, textured volume data for possible letterforms is infeasible. Furthermore, in addition to team member validation, professional analysis from experts in ancient Greek writings would be required in order to evaluate and validate any potential discoveries.
+As a part of the larger “volume cartography” project occurring at \cite{VisCenter}, a need arose for automated recognition of ancient Greek handwritten letterforms.  Because the volume of data that could potentially contain text is large, manually parsing flattened, textured volume data for possible letterforms is infeasible. Furthermore, in addition to team member validation, professional analysis from experts in ancient Greek writings would be required in order to evaluate and validate any potential discoveries.
 
-As a first pass, however, automated recognition of potential letterforms provides a good estimate of signal-to-noise ratio and evaluation of letterform extraction procedures. To the author’s knowledge, however, no open or commercial database of segmented ancient Greek handwritten letterforms exists with which to serve as a training dataset for any potential text classifier. Instead, the author proposes to train classifiers based on datasets of modern Greek handwriting - in particular, the dataset proposed in [GCDB] - and evaluate based on hand-segmented text from the document collection of [BYU].
+As a first pass, however, automated recognition of potential letterforms provides a good estimate of signal-to-noise ratio and evaluation of letterform extraction procedures. To the author’s knowledge, however, no open or commercial database of segmented ancient Greek handwritten letterforms exists with which to serve as a training dataset for any potential text classification algorithm. Instead, the author proposes to train classifiers based on datasets of modern Greek handwriting - in particular, the dataset proposed in \cite{GCDB} - and evaluate the classifier on letterforms extracted by hand from the document corpus of \cite{BYU}. This corpus is comprised of documents taken from ancient papyrus scrolls from Herculaneum, Petra, and the Judean Desert \cite{chabries2003imaging}. An example of an extracted letterform is in \ref{fig:regalpha}.
 
-The letterforms from the [BYU] collection comprise almost all letters in the ancient Greek alphabet. There are two letters used in that alphabet that are not used today, and thus are excluded from any testing. There are approximately 150 "good" letterforms - those that both survived the process of being cast to grayscale images and that still had suitable structure after binarization. The binarized letterforms are still quite rough, as can be seen in \label{fig:AGbin}
+\subsection{Datasets}
+
+The ancient and modern Greek alphabets are nearly identical, with the exception of three letters that have fallen out of use, due either to redundancy or disuse of that particular sound in the spoken language: F $($\textit{digamma}$)$, M $($\textit{san}$)$, and \Koppa$\:($\textit{koppa}$)$. As such, these letters are excluded from testing in the evaluation section. Ancient Greek manuscripts were also traditionally written in all capital letters.
+
+The dataset presented in \cite{GCDB} is a small part of a larger system devoted to collecting modern Greek handwriting samples from many different people. The database developed by the authors was built with an eye toward extensibility and flexibility, retaining information such as gender and age of the text sample authors, and collecting samples not only of individual letters, but also entire words to allow for handwriting analysis at the word and phrase level. Only uppercase letters are considered for the work presented here. All letterforms from GCDB are binarized and were resized to $49$x$51$ pixels. An example of a \textAlpha$\:$ is presented in \ref{fig:malpha}.
+
+Letterforms were extracted from the corpus of \cite{BYU} by hand with the use of Photoshop. Images were loaded into the program and then individually segmented and classified by a researcher from \cite{VisCenter}. The extracted letterforms comprise almost all letters in the ancient Greek alphabet, with the exception of Ξ $($\textit{chi}$)$ and Ψ $($\textit{psi}$)$; as such, the corresponding letters from the dataset presented in \cite{GCDB} were excluded from the training component for all classifiers. The segmented letters were binarized by first transforming them into grayscale images and then performing a threshold. They were then resized to $49$x$51$ pixels to match samples from GCDB. There are approximately 150 "good" letterforms - those that both survived the process of being transformed to grayscale images and that still had suitable structure after binarization. The structure of the binarized letterforms are still quite rough, as can be seen in \ref{fig:binalpha}. There is a lot of noise present in some of the binarized images, as can be seen in \ref{fig:noisyLambda}. These approximately 150 letterforms served as the final testing dataset for the letter classifiers.
 
 \begin{figure}
     \centering
@@ -89,97 +90,93 @@ The letterforms from the [BYU] collection comprise almost all letters in the anc
     \begin{subfigure}{0.5\textwidth}
         \centering
         \includegraphics[width=0.4\linewidth]{res/001.png}
-        \captionof{figure}{The letterform binarized}
+        \captionof{figure}{The letterform of \ref{fig:regalpha} binarized}
         \label{fig:binalpha}
     \end{subfigure}
     \begin{subfigure}{0.5\textwidth}
         \centering
+        \includegraphics[width=0.4\linewidth]{res/002.png}
+        \caption{Extremely noisy example of an extracted \textLambda$\:$ from the corpus of \cite{BYU}}
+        \label{fig:noisyLambda}
+    \end{subfigure}
+    \begin{subfigure}{0.5\textwidth}
+        \centering
         \includegraphics[width=0.4\linewidth]{res/form14.png}
-        \caption{Modern handwritten Greek \textAlpha}
-        \label{fig:binalpha}
+        \caption{Modern handwritten Greek \textAlpha$\:$ from \cite{GCDB}}
+        \label{fig:malpha}
     \end{subfigure}
 \end{figure}
+
+
 
 %------------------------------------------------------------------------
 \section{Related Work}
 
-Automated recognition of Early Christian Greek manuscripts has been carried out previously by [CIL], in which the authors employed a segmentation-free approach by detecting open and closed cavities in letterforms and using those as a basis with which to extract features of each character. The system developed by the authors obtained a recall value of 89\% for simple letterforms in their testing dataset.
+Automated recognition of letters from Early Christian Greek manuscripts has been carried out previously in \cite{segFree}, in which the authors employed a segmentation-free approach by detecting open and closed cavities in letterforms and using those as a basis with which to extract features of each character. The system developed by the authors obtained a recall value of 89\% for simple letterforms in their testing dataset.
 
-[HisDoc] project involved not only handwriting recognition and digitization of manuscript text data, but also developing an information retrieval system around recovered data. The authors developed this system and applied it primarily to three text corpora in different languages (Latin, German, and English, respectively). Their system accurately segmented and recognized text from each corpus and, using a neural network-based approach, had word recognition error rates of less than 10\%.
+The HisDoc project \cite{HisDoc} involved not only handwriting recognition and digitization of manuscript text data, but also developing an information retrieval system around recovered data. The authors developed this system and applied it primarily to three text corpora in different languages (Latin, German, and English). Their system accurately segmented and recognized text from each corpus and, using a neural network-based approach, had word recognition error rates of less than 10\%.
 
-[Diem1], [Diem2] proposed a binarization-free approach to recognizing letterforms from ancient Slavonic documents using SIFT features, SVM classifiers, and finally a weighted voting algorithm based on pre-classified local descriptors. Not applying binarization filters to input documents allowed for more data from each letterform, particularly those that were heavily degraded or experienced occlusion from stains or tears in the manuscript.
+The authors of \cite{Diem1} also proposed a segmentation and binarization-free approach to recognizing letterforms from ancient Slavonic documents using SIFT features, SVM classifiers, and finally a weighted voting algorithm based on pre-classified local descriptors. Disregarding binarization of input images allowed for their classifiers to work with more data from each letterform, particularly those that were heavily degraded or experienced severe occlusion from stains or tears in the manuscript. Affine transformations were also applied to sample selections from documents in order to determine the resiliency of the authors' extracted and local features used at the end of their proposed method. It was found that SIFT features performed the best overall in the classification task with affine transformations induced.
 
-The authors of [GRUHD] were the first to develop an open dataset of modern Greek handwriting that contained extensive metadata about participants, as well as providing very well-segmented letterforms and words from each individual author. The sample text contains simple Greek words as well as both uppercase and lowercase Greek letters and numerals from 1000 individual contributors. This database has been supplanted by [GCDB], from the same authors, with improvements to database architecture and archival. GCDB also contains Greek word samples and letterforms from 305 unique contributors.
+The authors of \cite{GRUHD} were the first to develop an open dataset of modern Greek handwriting that contained extensive metadata about participants, as well as providing very well-segmented letterforms and words from each individual author. The sample text contains simple Greek words as well as both uppercase and lowercase Greek letters and numerals from 1000 individual contributors. This database has been supplanted by the work of \cite{GCDB}, from the same authors, with improvements to database architecture and archival. GCDB also contains Greek word samples and letterforms from 305 unique contributors.
 
 %-------------------------------------------------------------------------
 \section{Problem Statement}
 
-With the lack of ancient Greek handwriting dataset availability, building and evaluating a detector on live data proves difficult. In order to approximate a recognition system, we propose to answer the following primary research question:
+With the lack of ancient Greek handwriting datasets, building and evaluating a detector on live data proves difficult. In order to approximate a recognition system, we propose to answer the following primary research question:
 
 \begin{quote}
     \textit{Can a handwriting recognition system that is trained on modern Greek handwriting be used to classify segmented letterforms from ancient Greek manuscripts?}
 \end{quote}
 
-A variety of classifiers will be built that will be validated against both the training dataset as well as live data from the corpora of [BYU].
+Two forms of classifiers, k-Nearest Neighbors and Support Vector Machines, will be built that will be validated against the training dataset and tested against live data from the corpora of \cite{BYU}.
 
 %-------------------------------------------------------------------------
 \section{Approach}
 
-In order to get a variety of results from training data, a host of classifiers will be developed using a variety of common learning algorithms. A fraction of the dataset from [GCDB] will be used to train each classifier, and the remaining samples will comprise the evaluation dataset. Each trained classifier will also be evaluated on individual letterforms extracted from the corpora of [BYU].
+Uppercase letterforms retrieved from the GCDB database will comprise the training dataset. There are 9,910 images in the testing dataset, with an approximately uniform distribution across all letters. As mentioned previously, due to the lack of the letters \textPsi$\:$ and \textXi$\:$ in the testing dataset they are excluded from the training set. Scikit-learn \cite{scikit-learn} was used to develop all code, as it provides a rich set of libraries with which to develop and validate many different kinds of classifiers. In order to get a variety of results from training data, two classifiers were developed: one using the k-nearest neighbors classification algorithm, and the other using the support vector machine algorithm. In order to accurately train and validate the classifier, 50\% of the samples from GCDB were used for the training dataset, while the other half was used to perform cross-validation. Finally, the classifier was tested with the 150 letterforms extracted from the corpus of \cite{BYU}.
 
 %-------------------------------------------------------------------------
-\subsection{k-Nearest Neighbors}
+\subsection{k-Nearest Neighbors with PCA}
 
-A very simple k-Nearest Neighbors classifier was developed using Python and OpenCV. The built-in kNN classifier in OpenCV was used as the base, and was trained on 50\% of the GCDB dataset. The remaining half of the data served as evaluation data.
-\begin{itemize}
-    \item As I try more classifiers, I will put them in subsections below this one
-    \item Once I get the extracted letterforms from the BYU corpora, I will go back and evaluate the trained kNN classifier on those letterforms and report the results in the appropriate section
-    \item Also want to try out other features such as Zernicke moments from [Kale]
-    \item I had issues running the kNN classifier when I resized all images to be the same size - recognition rates dropped to around 20\% for some reason. I could not find in my code where the issue was
-\end{itemize}
+First, a k-nearest neighbor classifier was constructed to classify the data. Principle Component Analysis was utilized to reduce the dimensionality down from 2500 (the number of pixels in each input image). It was found that $60$ was the optimal number of dimensions for PCA. Scaling was utilized to bring all reduced dimensional components into a common scale. Results from this method are presented in the evaluation section.
 
 %-------------------------------------------------------------------------
-\subsection{SVM + HOG Features}
+\subsection{SVM with PCA}
 
-Another simple classifier built aroung Histogram of Ordered Gradients (HOG) and an SVM classifier was built again using Python and OpenCV. A classifier based on the built-in SVM classifier in OpenCV, as well as HOG features calculated from Sobel image derivatives was trained on approximately half of the test dataset, and tested on the other half.
-\begin{itemize}
-    \item I still have to actually test the classifier on the real test dataset, the ancient Greek handwritten letterforms
-\end{itemize}
+A support vector machine was trained on the training data, again with a 50/50 split in terms of train/validation ratio. Again principle component analysis was used to reduce the dimensionality of input data. The optimal number of dimensions for PCA was found to be $60$ as well. Afterward, scaling was again used to bring all features into a common scal. In order to optimize the parameters of the SVM classifier, an exhaustive grid search was performed that iterated over different kernels, values of $C$ and $\gamma$. The optimal classifier was found to occur with a kernel function of
+\begin{align*}
+    f(x) = e^{-\gamma \left| x - x' \right|^2}
+\end{align*}
+and the optimal values of $C$ and $\gamma$ were found to be $10$ and $0.01$, respectively.
 
 %-------------------------------------------------------------------------
 \section{Evaluation}
-\subsection{k-Nearest Neighbors}
+\subsection{k-Nearest Neighbors with PCA}
 
-The simple k-Nearest Neighbors classifier was evaluated on the GCDB dataset, with 50\% of the dataset comprising the training data, and the other 50\% comprising the evaluation data. The classifier was run for differing values of $k$ in the range [1, 20]. The plot of accuracy vs. values of $k$ are shown in \label{fig:kNNplot}.
+The simple k-Nearest Neighbors classifier was evaluated on the GCDB dataset. Through experimentation, the optimal value of $k$ was found to be 10. This yielded a cross-validation percentage of only $38.6\%$. However, when evaluated on the testing dataset, the highest percentage seen, $8.0\%$, was the overall highest observed not only for different values of both $k$ and the number of dimensions obtained through PCA, but also out of all classifiers used in the study.
 
-\begin{figure}
-    \begin{center}
-        \includegraphics[width=0.8\linewidth]{res/figure_1.png}
-        \caption{Plot of k-Nearest Neighbors accuracy vs. increasing values of $k$}
-    \end{center}
-    \label{fig:kNNplot}
-\end{figure}
+\subsection{SVM with PCA}
+The SVM classifier utilizing principal component analysis obtained a classification accuracy of $54.3\%$ on the cross-validation test. This was the highest-observed accuracy for the parameters given in section 4. Compared to the k-nearest neighbors with PCA, this method did far better in the cross-validation testing. However, when run with the real data, the classifier was only able to achieve $5.7\%$. Additionally, it was observed that the classifier simply guessed a constant value for every sample in the testing dataset. The confusion matrix for the cross-validation step can be observed in Table \ref{tab:confmatrix}.
 
-\begin{itemize}
-    \item Would like to have a color plot of the clusters in the future here as well
-    \item As I add more classifiers, I will expand this section in tandem with the above \textit{Approach} section
-\end{itemize}
-
-\subsection{SVM + HOG Features}
-The SVM classifier utilizing HOG features was trained on 50\% of the GCDB dataset, and the other half served as the testing dataset. Recognition rates of up to 49.46\% were achieved. This is still quite low, even for handwritten letteforms, which means that there is still a lot of room for improvement in this classifier.
+\begin{table}
+    \centering
+    \includegraphics[width=0.4\textwidth]{res/table1.png}
+    \caption{Confusion matrix for SVM classifier}
+    \label{tab:confmatrix}
+\end{table}
 
 %-------------------------------------------------------------------------
 \section{Discussion}
 
-\begin{itemize}
-    \item Trained kNN classifier on GCDM dataset, achieved maximum accuracy of 66.8\% recognition
-    \item Trained SVM + HOG classifier on GCDM dataset, achieved maximum accuracy of 49.46\% recognition
-    \item Will list more summary results for each classifier
-\end{itemize}
+As can be seen from the results obtained from both the k-nearest neighbors and support vector machine classifiers, the accuracy of both methods leaves something to be desired. The cross-validation scores of both classifiers are quite low compared to other character recognition systems, although remarkably the cross-validation score of the SVM classifier achieved a somewhat acceptable accuracy of 54.3\%. However, while this problem space is difficult given the extreme variability of handwriting across the scores of people sampled in the GCDB collection, it is the opinion of the author that this cross-validation score could be much higher for both classifiers.
+
+The accuracy of the classifiers when tested against the letterforms from the corpus of \cite{BYU} is also incredibly poor. Simply guessing a consistent class for each testing sample would yield around the same percentage as obtained with the SVM classifier (and indeed, this is exactly what the classifier ended up doing). There remains room for much more optimization in this area, as well as experimentation with different extracted features from each input image. Furthermore, extending the types of classifiers and in combining them in different ways may lead to higher accuracy. For example, utilizing a large neural network with sufficient training data augmentation and feeding the output to a logistic regression component. Additionally, more pre-processing of the ancient Greek letterforms will be required. The minimal pre-processing of data discussed here introduced many image deformities that more than likely contributed to the poor performance of the classifiers.
+
+Two classification algorithms were trained on modern Greek handwriting samples and tested on ancient Greek handwritten letterforms extracted from ancient documents. There are still many optimizations to be performed on these classifiers and others in order to achieve suitable accuracy when used against unknown data. The cross-dataset validation problem for classification algorithms is already quite tough; combined with the variability of raw handwriting data, the problem becomes even more difficult, but much more interesting.
 
 %-------------------------------------------------------------------------
-\section{References}
-
+\newpage
 {\small
 \bibliographystyle{ieee}
 \bibliography{egbib}

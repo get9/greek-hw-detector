@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import skimage.io
 import sys
-import cv2
 
 from glob import glob
 from os.path import join, isdir, basename, splitext
-from itertools import izip_longest, chain
+from itertools import zip_longest, chain
 
 IMG_WIDTH  = 51
 IMG_HEIGHT = 49
@@ -51,7 +51,7 @@ def read_image_dir(directory, extension):
 
     # Read in files. Each elem of imgarrays is a numpy.ndarray
     bmpfilenames = glob(join(directory, '*.{}'.format(extension)))
-    imgarrays = [cv2.imread(bmp, cv2.IMREAD_GRAYSCALE) for bmp in bmpfilenames]
+    imgarrays = [skimage.io.imread(bmp, as_grey=True) for bmp in bmpfilenames]
 
     # imgsdata is list of numpy arrays of pixel data
     labels = [label for _ in imgarrays]
@@ -59,33 +59,23 @@ def read_image_dir(directory, extension):
 
 # Reads images from each directory inside 'toplevel' by calling read_image_dir
 # on each one of them and putting results into a numpy array
-def read_toplevel_dir(directory, extension, formatstr="", ravel=False, concat=False):
+def read_toplevel_dir(directory, extension, formatstr="", flatten=False, concat=False):
     if not isdir(directory):
         raise IOError("{} is not a directory".format(directory))
 
     dirs = glob( join(directory, '{}*'.format(formatstr)) )
     imglist = []
-    total_num_samples = 0
     for d in dirs:
-        # images = [(np.array, label), ...]
-        images = read_image_dir(d, extension)
-        # imglist is [[(np.array, label), ...], ...]
-        imglist.append(images)
-
-    # Need to swizzle images together
-    swizzled_imgs = list(chain.from_iterable(izip_longest(*imglist)))
-
-    # Remove None elements that were introduced from swizzling
-    swizzled_imgs = filter(None, swizzled_imgs)
+        imglist.extend(read_image_dir(d, extension))
 
     # Concatenate them together into giant list of all samples of all letters
-    data, labels = zip(*swizzled_imgs)
+    data, labels = zip(*imglist)
     labels = np.array(labels)
 
     # If we need to ravel the data (flatten it all out so that images are 1-D and
     # labels are 1-D on primary axis), do so
-    if ravel:
-        data = map(lambda i: i.ravel().reshape((1, IMG_WIDTH * IMG_HEIGHT)), data)
+    if flatten:
+        data = list(map(lambda i: i.reshape((1, IMG_WIDTH * IMG_HEIGHT)), data))
 
     # If we have to concat, then we need to put the data arrays together
     if concat:
